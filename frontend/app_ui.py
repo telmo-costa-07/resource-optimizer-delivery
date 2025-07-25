@@ -33,7 +33,7 @@ st.markdown(f"<span style='background-color:#1a73e8; color:white; border-radius:
 
  # Statistics
 with tab1:
-    # Summary KPIs
+     # Summary KPIs
     kpi1, kpi2, kpi3 = st.columns(3)
     with kpi1:
         st.metric("⏱️ Average Delivery Time", f"{filtered_df['Delivery_Time'].mean():.2f} min")
@@ -42,7 +42,7 @@ with tab1:
     with kpi3:
         st.metric("🚗 Vehicles Used", f"{filtered_df['Vehicle'].nunique()}")
 
-    # Split table and descriptive statistics into columns
+     # Split table and descriptive statistics into columns
     col_data, col_stats = st.columns([2, 1])
     with col_data:
         st.subheader(f"📊 Delivery Data for Area: {area}")

@@ -17,7 +17,7 @@ resource-optimizer-delivery/
 │   ├── recommender.py        # Recommendation engine
 │   └── visualizer.py         # Charts and visual analytics
 ├── data/
-│   ├── amazon_delivery.csv   # Dataset file (manual or via kagglehub)
+│   ├── amazon_delivery.csv   # Dataset file
 │   └── README.md             # Instructions about data
 ├── frontend/
 │   └── app_ui.py             # Streamlit dashboard
