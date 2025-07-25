@@ -7,10 +7,10 @@ def load_data(path="./data/amazon_delivery.csv"):
     return df
 
 def clean_data(df):
-    # Remover espaços nos nomes de colunas
+    # Remove spaces from column names
     df.columns = df.columns.str.strip()
 
-    # Remover linhas com dados ausentes
+    # Remove rows with missing data
     df = df.dropna()
     print("Data cleaned. Remaining rows:", df.shape)
 
