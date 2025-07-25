@@ -13,7 +13,7 @@ st.set_page_config(page_title="Amazon Delivery Optimizer", layout="wide")
 st.title("🚚 Amazon Delivery Resource Optimizer")
 
  # Navigation tabs
-tab1, tab2, tab3 = st.tabs(["Statistics", "Visualization", "Recommendations"])
+tab1, tab2 = st.tabs(["Statistics", "Visualization"])
 
  # Load data
 df = clean_data(load_data())
@@ -40,7 +40,9 @@ with tab1:
     with kpi2:
         st.metric("📦 Number of Deliveries", f"{len(filtered_df)}")
     with kpi3:
-        st.metric("🚗 Vehicles Used", f"{filtered_df['Vehicle'].nunique()}")
+
+        
+        st.metric("🚗 Number of Vehicles Types Used", f"{filtered_df['Vehicle'].nunique()}")
 
      # Split table and descriptive statistics into columns
     col_data, col_stats = st.columns([2, 1])
@@ -73,7 +75,19 @@ with tab2:
         ).properties(width=350, height=300)
         st.altair_chart(vehicle_chart, use_container_width=True)
 
- # Recommendations (placeholder)
-with tab3:
-    st.markdown("### 💡 Recommendations")
-    st.info("Recommendation feature coming soon!")
+    # Scatter plot for all stores and drops (X=Longitude, Y=Latitude)
+    st.markdown("### 🗺️ Store and Drop Locations")
+    store_points = filtered_df[['Store_Longitude', 'Store_Latitude']].drop_duplicates().copy()
+    store_points = store_points.rename(columns={'Store_Longitude': 'Longitude', 'Store_Latitude': 'Latitude'})
+    store_points['Type'] = 'Store'
+    drop_points = filtered_df[['Drop_Longitude', 'Drop_Latitude']].drop_duplicates().copy()
+    drop_points = drop_points.rename(columns={'Drop_Longitude': 'Longitude', 'Drop_Latitude': 'Latitude'})
+    drop_points['Type'] = 'Drop'
+    all_points = pd.concat([store_points, drop_points], ignore_index=True)
+    scatter = alt.Chart(all_points).mark_circle(size=80).encode(
+        x=alt.X('Longitude', title='Longitude'),
+        y=alt.Y('Latitude', title='Latitude'),
+        color=alt.Color('Type', scale=alt.Scale(domain=['Store', 'Drop'], range=['blue', 'red'])),
+        tooltip=['Type', 'Latitude', 'Longitude']
+    ).properties(width=700, height=400)
+    st.altair_chart(scatter, use_container_width=True)
