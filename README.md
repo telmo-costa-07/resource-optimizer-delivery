@@ -9,6 +9,7 @@ A resource optimization and recommendation system built with Python and Streamli
 
 ## 🗂️ Project Structure
 
+```
 resource-optimizer-delivery/
 ├── app/
 │   ├── main.py               # Load and preprocess data
@@ -25,6 +26,7 @@ resource-optimizer-delivery/
 ├── requirements.txt          # Python dependencies
 ├── LICENSE                   # MIT License
 └── README.md                 # Project documentation
+```
 
 ## 📁 Dataset
 Based on: [Amazon Delivery - Kaggle Notebook](https://www.kaggle.com/code/fareedalianwar/amazon-delivery)
