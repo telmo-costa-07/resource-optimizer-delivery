@@ -1,24 +1,32 @@
 import streamlit as st
 import pandas as pd
+
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import altair as alt
 
+
 from app.main import load_data, clean_data
+from app.optimizer import train_delivery_time_model, FEATURES, NUMERIC_FEATURES, CATEGORICAL_FEATURES
+
 
 st.set_page_config(page_title="Amazon Delivery Optimizer", layout="wide")
 
+
 st.title("🚚 Amazon Delivery Resource Optimizer")
 
- # Navigation tabs
-tab1, tab2, tab3 = st.tabs(["Statistics", "Visualization", "Data Analysis"])
 
- # Load data
+# Navigation tabs
+tab1, tab2, tab3, tab4 = st.tabs(["Statistics", "Visualization", "Data Analysis", "Prediction"])
+
+
+# Load data
 df = clean_data(load_data())
 
- # Filters
+
+# Filters
 with st.sidebar:
     st.header("🔍 Filters")
     area_options = ['All'] + sorted(df['Area'].unique())
@@ -26,30 +34,31 @@ with st.sidebar:
     vehicle_options = sorted(df['Vehicle'].unique())
     vehicle = st.multiselect("Vehicle Type", options=vehicle_options, default=vehicle_options)
 
- # Apply filters
+
+# Apply filters
 if area == 'All':
     filtered_df = df[df['Vehicle'].isin(vehicle)]
 else:
     filtered_df = df[(df['Area'] == area) & (df['Vehicle'].isin(vehicle))]
 
- # Visual feedback for applied filters
+
+# Visual feedback for applied filters
 st.markdown(f"<span style='background-color:#1a73e8; color:white; border-radius:8px; padding:6px 16px; font-size:1em; margin-bottom:10px; display:inline-block;'>Applied filters: <b>Area</b> = {area} | <b>Vehicles</b> = {', '.join(vehicle) if vehicle else 'None'}</span>", unsafe_allow_html=True)
 
 
- # Statistics
+
+# Statistics
 with tab1:
-     # Summary KPIs
+    # Summary KPIs
     kpi1, kpi2, kpi3 = st.columns(3)
     with kpi1:
         st.metric("⏱️ Average Delivery Time", f"{filtered_df['Delivery_Time'].mean():.2f} min")
     with kpi2:
         st.metric("📦 Number of Deliveries", f"{len(filtered_df)}")
     with kpi3:
-
-        
         st.metric("🚗 Number of Vehicles Types Used", f"{filtered_df['Vehicle'].nunique()}")
 
-     # Split table and descriptive statistics into columns
+    # Split table and descriptive statistics into columns
     col_data, col_stats = st.columns([2, 1])
     with col_data:
         st.subheader(f"📊 Delivery Data for Area: {area}")
@@ -58,7 +67,8 @@ with tab1:
         st.markdown("### 📈 Delivery Time Stats")
         st.write(filtered_df['Delivery_Time'].describe())
 
- # Visualization
+    
+# Visualization
 with tab2:
     col_hist, col_vehicle = st.columns(2)
     with col_hist:
@@ -98,11 +108,12 @@ with tab2:
     st.altair_chart(scatter, use_container_width=True)
 
 
- # Data Analysis tab (placeholder)
+
+# Data Analysis tab (placeholder)
 with tab3:
     st.markdown("### 📊 Data Analysis")
 
-     # Correlation matrix heatmap
+    # Correlation matrix heatmap
     st.markdown("#### Correlation Matrix")
     corr = filtered_df.select_dtypes(include=['number']).corr()
     corr_matrix = corr.stack().reset_index()
@@ -412,3 +423,36 @@ with tab3:
             color=alt.Color('Area', legend=None)
         )
         st.altair_chart(area_pie + pie_text, use_container_width=True)
+
+# Prediction tab
+with tab4:
+    st.markdown("### 🤖 Delivery Time Prediction")
+    st.write("Fill in the features below to predict the delivery time using the trained model.")
+
+    # Train model on all data (in a real app, load a persisted model)
+    model, mse = train_delivery_time_model(df)
+
+    # Input form for prediction in columns
+    with st.form("prediction_form"):
+        input_data = {}
+        col_num, col_cat = st.columns(2)
+        with col_num:
+            st.markdown("#### Numeric Features")
+            for feature in NUMERIC_FEATURES:
+                min_val = float(df[feature].min())
+                max_val = float(df[feature].max())
+                mean_val = float(df[feature].mean())
+                input_data[feature] = st.number_input(f"{feature}", min_value=min_val, max_value=max_val, value=mean_val)
+        with col_cat:
+            st.markdown("#### Categorical Features")
+            for feature in CATEGORICAL_FEATURES:
+                options = sorted(df[feature].unique())
+                input_data[feature] = st.selectbox(f"{feature}", options=options)
+        submitted = st.form_submit_button("Predict Delivery Time")
+
+    if submitted:
+        # Prepare input for prediction
+        input_df = pd.DataFrame([input_data])[FEATURES]
+        prediction = model.predict(input_df)[0]
+        st.success(f"Predicted Delivery Time: {prediction:.2f} min")
+        st.info(f"Model Test MSE: {mse:.2f}")

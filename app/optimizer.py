@@ -19,13 +19,13 @@ CATEGORICAL_FEATURES = ['Weather', 'Traffic', 'Vehicle', 'Area']
 
 def train_delivery_time_model(df):
     """
-    Treina um modelo de ML para prever o Delivery_Time.
-    Retorna o pipeline treinado e o MSE no conjunto de teste.
+    Trains a ML model to predict Delivery_Time.
+    Returns the trained pipeline and the MSE on the test set.
     """
     X = df[FEATURES]
     y = df[TARGET]
 
-    # Pipeline para transformar dados
+    # Pipeline to transform data
     preprocessor = ColumnTransformer(
         transformers=[
             ('num', 'passthrough', NUMERIC_FEATURES),
@@ -38,13 +38,13 @@ def train_delivery_time_model(df):
         ('regressor', RandomForestRegressor())
     ])
 
-    # Separar treino e teste
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    # Split train and test
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.2, random_state = 42)
 
-    # Treinar modelo
+    # Train model
     model_pipeline.fit(X_train, y_train)
 
-    # Avaliar
+    # Evaluate
     y_pred = model_pipeline.predict(X_test)
     mse = mean_squared_error(y_test, y_pred)
 
