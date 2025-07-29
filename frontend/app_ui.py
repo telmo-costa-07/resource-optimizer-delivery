@@ -9,7 +9,9 @@ import altair as alt
 
 
 from app.main import load_data, clean_data
+
 from app.optimizer import train_delivery_time_model, FEATURES, NUMERIC_FEATURES, CATEGORICAL_FEATURES
+from app.recommender import train_vehicle_recommender, recommend_vehicle
 
 
 st.set_page_config(page_title="Amazon Delivery Optimizer", layout="wide")
@@ -429,8 +431,10 @@ with tab4:
     st.markdown("### 🤖 Delivery Time Prediction")
     st.write("Fill in the features below to predict the delivery time using the trained model.")
 
+
     # Train model on all data (in a real app, load a persisted model)
     model, mse = train_delivery_time_model(df)
+    vehicle_models = train_vehicle_recommender(df)
 
     # Input form for prediction in columns
     with st.form("prediction_form"):
@@ -456,3 +460,12 @@ with tab4:
         prediction = model.predict(input_df)[0]
         st.success(f"Predicted Delivery Time: {prediction:.2f} min")
         st.info(f"Model Test MSE: {mse:.2f}")
+
+        # Vehicle recommender
+        rec_input = {k: v for k, v in input_data.items() if k != 'Vehicle'}
+        best_vehicle, best_time, all_preds = recommend_vehicle(rec_input, vehicle_models)
+        st.markdown("---")
+        st.markdown(f"#### 🚗 Recommended Vehicle Type: <span style='color:#1a73e8'><b>{best_vehicle}</b></span>", unsafe_allow_html=True)
+        st.markdown(f"Predicted Delivery Time with <b>{best_vehicle}</b>: <span style='color:green'><b>{best_time:.2f} min</b></span>", unsafe_allow_html=True)
+        with st.expander("See all vehicle predictions"):
+            st.write({k: f"{v:.2f} min" for k, v in all_preds.items()})
