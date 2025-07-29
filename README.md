@@ -87,3 +87,9 @@ streamlit run frontend/app_ui.py
 
 MIT License. See [LICENSE](LICENSE) for details.
 
+---
+
+## 🙌 Credits
+
+Developed by Telmo Costa
+
