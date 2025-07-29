@@ -11,7 +11,20 @@ import altair as alt
 from app.main import load_data, clean_data
 
 from app.optimizer import train_delivery_time_model, FEATURES, NUMERIC_FEATURES, CATEGORICAL_FEATURES
-from app.recommender import train_vehicle_recommender, recommend_vehicle
+
+# Use optimizer model for all vehicle predictions
+def recommend_vehicle_with_optimizer(input_features, model, vehicle_options):
+    """
+    Given input features (dict), returns the vehicle type with the lowest predicted delivery time using the optimizer model.
+    """
+    preds = {}
+    for vehicle in vehicle_options:
+        features = input_features.copy()
+        features['Vehicle'] = vehicle
+        input_df = pd.DataFrame([features])[FEATURES]
+        preds[vehicle] = model.predict(input_df)[0]
+    best_vehicle = min(preds, key=preds.get)
+    return best_vehicle, preds[best_vehicle], preds
 
 
 st.set_page_config(page_title="Amazon Delivery Optimizer", layout="wide")
@@ -434,24 +447,31 @@ with tab4:
 
     # Train model on all data (in a real app, load a persisted model)
     model, mse = train_delivery_time_model(df)
-    vehicle_models = train_vehicle_recommender(df)
+    vehicle_options = sorted(df['Vehicle'].unique())
 
-    # Input form for prediction in columns
+    # Input form for prediction: 3x2 for categoricals, 2x2 for numerics
     with st.form("prediction_form"):
         input_data = {}
-        col_num, col_cat = st.columns(2)
-        with col_num:
-            st.markdown("#### Numeric Features")
-            for feature in NUMERIC_FEATURES:
-                min_val = float(df[feature].min())
-                max_val = float(df[feature].max())
-                mean_val = float(df[feature].mean())
-                input_data[feature] = st.number_input(f"{feature}", min_value=min_val, max_value=max_val, value=mean_val)
-        with col_cat:
-            st.markdown("#### Categorical Features")
-            for feature in CATEGORICAL_FEATURES:
-                options = sorted(df[feature].unique())
-                input_data[feature] = st.selectbox(f"{feature}", options=options)
+        # Categorical features: 3 rows x 2 columns
+        st.markdown("#### Categorical Features")
+        cat_cols = st.columns(2)
+        for i, feature in enumerate(CATEGORICAL_FEATURES):
+            options = sorted(df[feature].unique())
+            with cat_cols[i % 2]:
+                input_data[feature] = st.selectbox(f"{feature}", options=options, key=f"cat_{feature}")
+            if i % 2 == 1 and i < len(CATEGORICAL_FEATURES) - 1:
+                st.write("")  # Add space between rows
+
+        st.markdown("#### Numeric Features")
+        num_cols = st.columns(2)
+        for i, feature in enumerate(NUMERIC_FEATURES):
+            min_val = float(df[feature].min())
+            max_val = float(df[feature].max())
+            mean_val = float(df[feature].mean())
+            with num_cols[i % 2]:
+                input_data[feature] = st.number_input(f"{feature}", min_value=min_val, max_value=max_val, value=mean_val, key=f"num_{feature}")
+            if i % 2 == 1 and i < len(NUMERIC_FEATURES) - 1:
+                st.write("")  # Add space between rows
         submitted = st.form_submit_button("Predict Delivery Time")
 
     if submitted:
@@ -461,9 +481,9 @@ with tab4:
         st.success(f"Predicted Delivery Time: {prediction:.2f} min")
         st.info(f"Model Test MSE: {mse:.2f}")
 
-        # Vehicle recommender
+        # Vehicle recommender using optimizer model
         rec_input = {k: v for k, v in input_data.items() if k != 'Vehicle'}
-        best_vehicle, best_time, all_preds = recommend_vehicle(rec_input, vehicle_models)
+        best_vehicle, best_time, all_preds = recommend_vehicle_with_optimizer(rec_input, model, vehicle_options)
         st.markdown("---")
         st.markdown(f"#### 🚗 Recommended Vehicle Type: <span style='color:#1a73e8'><b>{best_vehicle}</b></span>", unsafe_allow_html=True)
         st.markdown(f"Predicted Delivery Time with <b>{best_vehicle}</b>: <span style='color:green'><b>{best_time:.2f} min</b></span>", unsafe_allow_html=True)
